@@ -5,7 +5,7 @@ module Rubaidh # :nodoc:
     # Normally you won't need to call this directly; the +add_google_analytics_code+
     # after filter will insert it for you.
     def google_analytics_code
-      GoogleAnalytics.google_analytics_code(request.ssl?) if GoogleAnalytics.enabled?(request.format)
+      GoogleAnalytics.google_analytics_code(request) if GoogleAnalytics.enabled?(request.format)
     end
     
     # An after_filter to automatically add the analytics code.
@@ -21,29 +21,39 @@ module Rubaidh # :nodoc:
     end
   end
 
+  module GoogleAnalyticsAccountSupport
+ 
+    @google_analytics_account = nil
+    attr_accessor :google_analytics_account
+    
+  end
+
   class GoogleAnalyticsConfigurationError < StandardError; end
 
   # The core functionality to connect a Rails application
   # to a Google Analytics installation.
   class GoogleAnalytics
   
-    @@tracker_id = nil
+    @tracker_id = nil
     ##
-    # :singleton-method:
     # Specify the Google Analytics ID for this web site. This can be found
     # as the value of +_getTracker+ if you are using the new (ga.js) tracking
     # code, or the value of +_uacct+ if you are using the old (urchin.js)
     # tracking code.
-    cattr_accessor :tracker_id  
+    attr_accessor :tracker_id  
 
-    @@domain_name = nil
+    @domain_name = nil
     ##
-    # :singleton-method:
     # Specify a different domain name from the default. You'll want to use
     # this if you have several subdomains that you want to combine into
     # one report. See the Google Analytics documentation for more
     # information.
-    cattr_accessor :domain_name
+    attr_accessor :domain_name
+
+    def initialize(tracker_id, domain_name = nil)
+      @tracker_id = tracker_id
+      @domain_name = domain_name
+    end
 
     @@legacy_mode = false
     ##
@@ -135,18 +145,42 @@ module Rubaidh # :nodoc:
     #      ...
     cattr_accessor :override_trackpageview
     
+    @@default_account = nil
+    cattr_accessor :default_account
+ 
+    @@request_accounts = []
+    cattr_accessor :request_accounts
+ 
+    def self.add_request_account(account)
+      @@request_accounts << account
+    end
+
     # Return true if the Google Analytics system is enabled and configured
     # correctly for the specified format
     def self.enabled?(format)
-      raise Rubaidh::GoogleAnalyticsConfigurationError if tracker_id.blank? || analytics_url.blank?
+      raise Rubaidh::GoogleAnalyticsConfigurationError if default_account.blank? || analytics_url.blank?
       environments.include?(RAILS_ENV) && formats.include?(format.to_sym)
     end
     
+    def self.accounts(request)
+      [ default_account, request.google_analytics_account ].compact
+    end
+ 
+    def self.collect_accounts_code(request, legacy = false)
+      method = legacy ? :legacy_google_analytics_code : :google_analytics_code
+      
+      accounts(request).collect do |account|
+        account.send method, request.ssl?
+      end.join("\n")
+    end
+ 
+    def self.google_analytics_code(request)
+      collect_accounts_code(request, legacy_mode)
+    end
+ 
     # Construct the javascript code to be inserted on the calling page. The +ssl+
     # parameter can be used to force the SSL version of the code in legacy mode only.
-    def self.google_analytics_code(ssl = false)
-      return legacy_google_analytics_code(ssl) if legacy_mode
-
+    def google_analytics_code(ssl = false)
       extra_code = domain_name.blank? ? nil : "pageTracker._setDomainName(\"#{domain_name}\");"
       if !override_domain_name.blank?
         extra_code = "pageTracker._setDomainName(\"#{override_domain_name}\");"
@@ -179,9 +213,13 @@ module Rubaidh # :nodoc:
       HTML
     end
 
+    def self.legacy_google_analytics_code(request)
+      collect_accounts_code(request, false)
+    end
+ 
     # Construct the legacy version of the Google Analytics code. The +ssl+
     # parameter specifies whether or not to return the SSL version of the code.
-    def self.legacy_google_analytics_code(ssl = false)
+    def legacy_google_analytics_code(ssl = false)
       extra_code = domain_name.blank? ? nil : "_udn = \"#{domain_name}\";"
       if !override_domain_name.blank?
         extra_code = "_udn = \"#{override_domain_name}\";"

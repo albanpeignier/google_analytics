@@ -4,7 +4,7 @@ This plugin enables Google Analytics support in your application. By default
 it will output the analytics code for every single page automatically, if it
 is configured correctly. This is done by adding:
 
-    Rubaidh::GoogleAnalytics.tracker_id = 'UA-12345-67'
+    Rubaidh::GoogleAnalytics.default_account = Rubaidh::GoogleAnalytics.new('UA-1896598-5')
 
 to your <tt>config/environment.rb</tt>, inserting your own tracker id. This
 can be discovered by looking at the value assigned to +_uacct+ in the
@@ -114,6 +114,21 @@ tracker_id (usually in an initializer) will apply to all other requests.
       Rubaidh::GoogleAnalytics.override_domain_name  = 'foo.com'
       Rubaidh::GoogleAnalytics.override_tracker_id  = 'UA-123456-7'
     end
+
+== Multiple account support
+
+If you want to use several accounts in the page :
+
+    before_filter :create_user_google_analytics_account
+
+    def create_user_google_analytics_account
+      user_google_tracker_id = ...
+
+      unless user_google_tracker_id.blank?
+        request.google_analytics_account = Rubaidh::GoogleAnalytics.new(user_google_tracker_id)
+      end
+    end
+
 
 See the documentation for the GoogleAnalytics class for other configuration
 options.
