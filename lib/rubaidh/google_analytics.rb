@@ -255,14 +255,14 @@ module Rubaidh # :nodoc:
     end
 
     # Determine the tracker ID for this request
-    def self.request_tracker_id
+    def request_tracker_id
       use_tracker_id = override_tracker_id.blank? ? tracker_id : override_tracker_id
       self.override_tracker_id = nil
       use_tracker_id
     end
     
     # Determine the path to report for this request
-    def self.request_tracked_path
+    def request_tracked_path
       use_tracked_path = override_trackpageview.blank? ? '' : "'#{override_trackpageview}'"
       self.override_trackpageview = nil
       use_tracked_path
