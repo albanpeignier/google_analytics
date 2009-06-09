@@ -29,8 +29,8 @@ end
 
 class GoogleAnalyticsTest < Test::Unit::TestCase
   def setup
-    @ga = Rubaidh::GoogleAnalytics.new
-    @ga.tracker_id = "the tracker id"
+    @ga = Rubaidh::GoogleAnalytics.new("the tracker id")
+    Rubaidh::GoogleAnalytics.default_account = @ga
   end
   
   def test_createable
@@ -73,8 +73,8 @@ class GoogleAnalyticsTest < Test::Unit::TestCase
   end
   
   # test self.enabled
-  def test_enabled_requires_tracker_id
-    Rubaidh::GoogleAnalytics.stubs(:tracker_id).returns(nil)
+  def test_enabled_requires_default_account
+    Rubaidh::GoogleAnalytics.stubs(:default_account).returns(nil)
     assert_raise(Rubaidh::GoogleAnalyticsConfigurationError) { Rubaidh::GoogleAnalytics.enabled?(:html) }
   end
   
