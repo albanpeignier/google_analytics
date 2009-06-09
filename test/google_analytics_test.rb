@@ -7,6 +7,7 @@ RAILS_ENV = 'test'
 class TestMixin
   class MockRequest
     attr_accessor :format
+    include Rubaidh::GoogleAnalyticsAccountSupport
   end
   class MockResponse
     attr_accessor :body
@@ -135,6 +136,16 @@ class GoogleAnalyticsTest < Test::Unit::TestCase
     Rubaidh::GoogleAnalytics.override_trackpageview = "/my/path"
     foo = @ga.request_tracked_path
     assert_nil(Rubaidh::GoogleAnalytics.override_trackpageview)
+  end
+
+  # test additional_accounts
+  def test_accounts_use_additional_accounts
+    request = TestMixin.new.request
+
+    account = Rubaidh::GoogleAnalytics.new('another')
+    Rubaidh::GoogleAnalytics.additional_accounts << account
+
+    assert_equal(true, Rubaidh::GoogleAnalytics.accounts(request).include?(account))
   end
 
   # Test the before_filter method does what we expect by subsituting the body tags and inserting

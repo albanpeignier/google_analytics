@@ -152,13 +152,9 @@ module Rubaidh # :nodoc:
     @@default_account = nil
     cattr_accessor :default_account
  
-    @@request_accounts = []
-    cattr_accessor :request_accounts
+    @@additional_accounts = []
+    cattr_accessor :additional_accounts
  
-    def self.add_request_account(account)
-      @@request_accounts << account
-    end
-
     # Return true if the Google Analytics system is enabled and configured
     # correctly for the specified format
     def self.enabled?(format)
@@ -167,7 +163,7 @@ module Rubaidh # :nodoc:
     end
     
     def self.accounts(request)
-      [ default_account, request.google_analytics_account ].compact
+      [ default_account, request.google_analytics_account, *additional_accounts ].compact
     end
  
     def self.collect_accounts_code(request, legacy = false)
