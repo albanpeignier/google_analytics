@@ -1,3 +1,7 @@
+require 'active_support'
+require 'action_pack'
+require 'action_view'
+
 module Rubaidh # :nodoc:
   # This module gets mixed in to ActionController::Base
   module GoogleAnalyticsMixin
@@ -14,9 +18,9 @@ module Rubaidh # :nodoc:
     # (see http://www.google.com/support/googleanalytics/bin/answer.py?answer=55527&topic=11006)
     def add_google_analytics_code
       if GoogleAnalytics.defer_load
-        response.body.sub! '</body>', "#{google_analytics_code}</body>" if response.body.respond_to?(:sub!)
+        response.body.sub! /<\/[bB][oO][dD][yY]>/, "#{google_analytics_code}</body>" if response.body.respond_to?(:sub!)
       else
-        response.body.sub! '<body>', "<body>#{google_analytics_code}" if response.body.respond_to?(:sub!)
+        response.body.sub! /(<[bB][oO][dD][yY][^>]*>)/, "\\1#{google_analytics_code}" if response.body.respond_to?(:sub!)
       end
     end
   end
@@ -204,10 +208,12 @@ module Rubaidh # :nodoc:
       code << <<-HTML
       <script type="text/javascript">
       <!--//--><![CDATA[//><!--
+      try {
       var pageTracker = _gat._getTracker('#{request_tracker_id}');
       #{extra_code}
       pageTracker._initData();
       pageTracker._trackPageview(#{request_tracked_path});
+      } catch(err) {}
       //--><!]]>
       </script>
       HTML
